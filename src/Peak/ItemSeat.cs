@@ -35,6 +35,8 @@ internal static class ItemSeat
             prefix: new HarmonyMethod(typeof(ItemSeat), nameof(RescueAim)));
         harmony.Patch(BuildGuard.Method(typeof(CharacterMovement), "TryJetpack"),
             transpiler: new HarmonyMethod(typeof(ItemSeat), nameof(RouteJetpackFuel)));
+        harmony.Patch(BuildGuard.Method(typeof(Item), "Consume", typeof(int)),
+            transpiler: new HarmonyMethod(typeof(ItemSeat), nameof(RouteConsumedSlot)));
         var patch = new HarmonyMethod(typeof(ItemSeat), nameof(RouteOwner));
         foreach (var target in new[]
         {
@@ -90,6 +92,33 @@ internal static class ItemSeat
         if (!camera) return true;
         __result = camera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         return false;
+    }
+
+    private static IEnumerable<CodeInstruction> RouteConsumedSlot(IEnumerable<CodeInstruction> source)
+    {
+        var holder = AccessTools.PropertyGetter(typeof(Item), nameof(Item.holderCharacter));
+        var inventoryOwner = BuildGuard.Method(typeof(ItemSeat), nameof(ConsumedSlotOwner), typeof(Item));
+        var matches = 0;
+        foreach (var instruction in source)
+        {
+            // The first lookup guards the native consumer event. The rest manage the inventory.
+            if (instruction.Calls(holder) && ++matches > 1)
+            {
+                instruction.opcode = OpCodes.Call;
+                instruction.operand = inventoryOwner;
+            }
+            yield return instruction;
+        }
+        if (matches != 8) throw new InvalidOperationException("Jalur konsumsi inventory PEAK berubah.");
+    }
+
+    private static Character ConsumedSlotOwner(Item item)
+    {
+        var recipient = item.holderCharacter;
+        if (PartyRuntime.Current?.IsLocalRoom != true) return recipient;
+        var giver = item.trueHolderCharacter;
+        // Feeding temporarily makes holderCharacter resolve to the recipient for the item effect.
+        return giver ? giver : recipient;
     }
 
     private static IEnumerable<CodeInstruction> RouteJetpackFuel(IEnumerable<CodeInstruction> source)

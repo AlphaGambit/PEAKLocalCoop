@@ -105,3 +105,7 @@ Pada 0.1.5, ikon dua pendaki menjadi anak dari tempat ikon asli Play Offline, se
 ## Arah item dan pilihan target
 
 `ItemSeat` mengalihkan referensi kamera dan karakter global ke pemegang item tamu untuk fungsi yang diaudit. `RopeShooter.WillAttach` memakai posisi, arah, dan status berpijak P2. `OnPrimaryFinishedCast` memakai kamera yang sama untuk titik tembak dan arah terbang. `RopeTier.Update` memakai input dan kamera pemegang tali. Adapter yang sama menangani `Action_RaycastDart`, `Action_LaunchPlayer`, `Action_RaycastSpawnSomething`, `Action_CloneSelectedItem`, serta penentuan target teman pada jalur secondary item. RPC tetap memakai data target yang dihitung oleh jalur asli.
+
+### Konsumsi lintas pemain pada 0.1.12
+
+`Character.GetFedItemRPC` mengisi `Item.overrideHolderCharacter` dengan penerima agar efek bandage atau makanan diterapkan kepadanya. `Item.Consume` memakai `holderCharacter` lagi saat memilih inventory dan slot. Adapter `ItemSeat.RouteConsumedSlot` mempertahankan jalur event konsumsi asli dan mengarahkan operasi slot ke `trueHolderCharacter` di room offline Local Co-op. Pemeriksaan delapan pemanggilan getter menahan patch jika bentuk metode berubah. Mode solo dan online tetap memakai getter asli.

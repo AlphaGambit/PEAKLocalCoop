@@ -1,10 +1,10 @@
-# PEAK Local Co-op 0.1.11
+# PEAK Local Co-op 0.1.12
 
 Mod eksperimental untuk PEAK Windows versi 3.1.0, Steam build **26542162**. Mod memakai satu proses PEAK, satu window dan satu room Photon offline. Setiap kursi memakai karakter, inventory, input dan sudut pandangnya sendiri di dunia yang sama.
 
 ## Unduh dan mulai
 
-- [Unduh ZIP v0.1.11](https://github.com/AlphaGambit/PEAKLocalCoop/releases/download/v0.1.11/PEAKLocalCoop-0.1.11.zip)
+- [Unduh ZIP v0.1.12](https://github.com/AlphaGambit/PEAKLocalCoop/releases/download/v0.1.12/PEAKLocalCoop-0.1.12.zip)
 - [Tutorial pemasangan, cara main, dan kontrol controller](docs/TUTORIAL.md)
 
 Ekstrak ZIP di luar folder Steam, tutup PEAK, lalu jalankan `Install or Repair Local Co-op.cmd`. Setelah selesai, buka `Play Local Co-op DX11.cmd`. P1 memakai keyboard dan mouse. P2–P4 menekan **Start/Menu** di controller masing-masing.
@@ -64,7 +64,7 @@ Launcher memilih Direct3D 11 saat proses mulai. Resolusi, render scale, preset, 
 
 ## Bagikan lewat GitHub
 
-Lampirkan `PEAKLocalCoop-0.1.11.zip` sebagai aset GitHub Release agar pemain mendapat DLL mod dan skrip instalasi bersama source. ZIP berisi source, DLL mod, aset mod, dan dokumentasi. File game beserta binary loader dipasang dari sumber masing-masing. [Panduan GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases).
+Lampirkan `PEAKLocalCoop-0.1.12.zip` sebagai aset GitHub Release agar pemain mendapat DLL mod dan skrip instalasi bersama source. ZIP berisi source, DLL mod, aset mod, dan dokumentasi. File game beserta binary loader dipasang dari sumber masing-masing. [Panduan GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases).
 
 ## Cakupan
 
@@ -81,6 +81,7 @@ Lampirkan `PEAKLocalCoop-0.1.11.zip` sebagai aset GitHub Release agar pemain men
 | --- | --- |
 | `-peak-coop-world-check -logFile "C:\path\world.log"` | Menguji benturan perangkap, pemulihan item dari flag personal dan visual marker per panel di PEAK. |
 | `-peak-coop-logic-check -logFile "C:\path\logic.log"` | Menjalankan uji empat kursi, inventory, empat arah D-pad, RB/LB, emote, ping, efek area, bidik item, checkpoint dan akhir run di game terpasang. |
+| `-peak-coop-feed-check` | Memeriksa slot pemberi dan inventory penerima setelah bandage dan makanan diberikan dari P1 ke P2 dan sebaliknya. |
 | `-peak-coop-item-check -logFile "C:\path\items.log"` | Menguji sasaran bidik dan titik tembak Rope Cannon P2 di pulau. |
 | `-peak-coop-probe` | Memeriksa dua prefab native, pemisahan gerak/lihat dan pickup dasar di Airport. |
 | `-peak-coop-menu-check -logFile "C:\path\menu.log"` | Memeriksa tombol di menu utama, fokus controller di lobi dan masuk Airport, dengan tangkapan layar. |

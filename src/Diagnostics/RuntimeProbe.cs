@@ -307,6 +307,16 @@ internal sealed class RuntimeProbe
             yield break;
         }
 
+        if (Environment.GetCommandLineArgs().Contains("-peak-coop-feed-check"))
+        {
+            var first = Character.localCharacter;
+            var second = runtime.GetCharacter(seat);
+            yield return CheckFeeding(first, second);
+            yield return CheckFeeding(second, first);
+            Application.Quit();
+            yield break;
+        }
+
         var logicCheck = Environment.GetCommandLineArgs().Contains("-peak-coop-logic-check");
         var host = Character.localCharacter;
         var p2 = runtime.GetCharacter(seat);
@@ -1029,6 +1039,47 @@ internal sealed class RuntimeProbe
         var dropped = InventorySize(scout) == original && CountGroundItems(prefab.itemID) == worldBefore + 1;
         var isolated = others.Select(InventorySize).SequenceEqual(counts);
         log.LogInfo($"LOGIC: P{seat.Number} pickup {picked}, controller drop {dropped}, other inventories unchanged {isolated}.");
+    }
+
+    private System.Collections.IEnumerator CheckFeeding(Character giver, Character receiver)
+    {
+        var prefabs = Zorro.Core.SingletonAsset<ItemDatabase>.Instance.itemLookup.Values;
+        foreach (var name in new[] { "Bandage", "Apple Berry" })
+        {
+            var prefab = prefabs.FirstOrDefault(candidate =>
+                candidate.name.Replace(" ", "").Replace("_", "").IndexOf(
+                    name.Replace(" ", ""), StringComparison.OrdinalIgnoreCase) >= 0);
+            if (!prefab)
+            {
+                log.LogError($"FEED: FAIL missing prefab {name}.");
+                continue;
+            }
+            var recipientInventory = InventorySize(receiver);
+            var item = PhotonNetwork.InstantiateItemRoom(prefab.name, giver.Center + Vector3.up, Quaternion.identity)
+                .GetComponent<Item>();
+            item.Interact(giver);
+            yield return null;
+            var slot = giver.player.itemSlots.FirstOrDefault(pocket => !pocket.IsEmpty() && pocket.prefab == prefab);
+            if (slot == null)
+            {
+                log.LogError($"FEED: FAIL pickup {name}.");
+                continue;
+            }
+            giver.refs.items.EquipSlot(Zorro.Core.Optionable<byte>.Some(slot.itemSlotID));
+            yield return new WaitForSecondsRealtime(0.8f);
+            var held = giver.data.currentItem;
+            if (!held || held.trueHolderCharacter != giver)
+            {
+                log.LogError($"FEED: FAIL equip {name}.");
+                continue;
+            }
+            receiver.FeedItem(held);
+            yield return new WaitForSecondsRealtime(0.8f);
+            var consumed = slot.IsEmpty() && (!held || !held.gameObject.activeInHierarchy);
+            var recipientUnchanged = InventorySize(receiver) == recipientInventory;
+            var direction = giver == Character.localCharacter ? "P1 to P2" : "P2 to P1";
+            log.LogInfo($"FEED: {(consumed && recipientUnchanged ? "PASS" : "FAIL")} {direction} {name}, consumed {consumed}, recipient inventory unchanged {recipientUnchanged}.");
+        }
     }
 
     private System.Collections.IEnumerator CheckRopeCannon(LocalParty.Seat seat)

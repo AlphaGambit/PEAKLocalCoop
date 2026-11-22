@@ -2,6 +2,10 @@
 
 Pengujian dilakukan 21 November 2026 pada PEAK 3.1.0, Steam build 26542162, lewat satu proses PEAK Windows dengan BepInEx 5.4.23.3. Input controller probe berasal dari perangkat Unity Input System sintetis. Launcher tetap memakai Steam biasa. Semua hit, inventory, checkpoint dan scene di bawah berjalan di game terpasang.
 
+## Regresi pemberian item 0.1.12
+
+Probe `-peak-coop-feed-check` berjalan pada PEAK 3.1.0 build 26542162 di pulau. Empat kasus lulus melalui RPC pemberian asli PEAK, yaitu bandage dan Apple Berry pada kedua arah P1↔P2. Item terpakai hilang dari tangan dan slot pemberi, dan jumlah item penerima tetap sama. Probe memanggil aksi pemberian secara langsung setelah pickup dan equip, sehingga fokusnya jalur konsumsi dan inventory.
+
 ## Regresi dunia 0.1.11
 
 `-peak-coop-world-check` dijalankan pada 22 November 2026 di PEAK 3.1.0 Steam build 26542162, Direct3D 11, `Level_109`. Fixture menyiapkan kondisi uji dalam dunia yang sama dan memanggil jalur PEAK yang terpasang.

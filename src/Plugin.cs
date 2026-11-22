@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace PeakLocalCoop;
 
-[BepInPlugin(Id, "PEAK Local Co-op", "0.1.11")]
+[BepInPlugin(Id, "PEAK Local Co-op", "0.1.12")]
 [BepInProcess("PEAK.exe")]
 [DefaultExecutionOrder(550)]
 public sealed class Plugin : BaseUnityPlugin
@@ -67,7 +67,7 @@ public sealed class Plugin : BaseUnityPlugin
                 StartCoroutine(probe.Proof());
             else if (args.Contains("-peak-coop-menu-check"))
                 StartCoroutine(probe.Slice(menuOnly: true));
-            else if (args.Contains("-peak-coop-slice") || args.Contains("-peak-coop-item-check") || args.Contains("-peak-coop-logic-check") || args.Contains("-peak-coop-world-check"))
+            else if (args.Contains("-peak-coop-slice") || args.Contains("-peak-coop-item-check") || args.Contains("-peak-coop-feed-check") || args.Contains("-peak-coop-logic-check") || args.Contains("-peak-coop-world-check"))
                 StartCoroutine(probe.Slice());
             else if (args.Any(arg => arg == "-peak-coop-bench" || arg == "-peak-coop-perf" || arg == "-peak-coop-perf-api"))
                 StartCoroutine(probe.Benchmark());
