@@ -246,6 +246,7 @@ internal sealed class PartyRuntime : IDisposable
         views = null;
         SeatGhosts.Clear();
         PingPresentation.Clear();
+        MirrorPresentation.Clear();
         hostMenu?.Dispose();
         hostMenu = null;
         SeatHooks.Clear();

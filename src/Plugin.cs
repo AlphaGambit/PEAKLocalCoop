@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace PeakLocalCoop;
 
-[BepInPlugin(Id, "PEAK Local Co-op", "0.1.12")]
+[BepInPlugin(Id, "PEAK Local Co-op", "0.1.13")]
 [BepInProcess("PEAK.exe")]
 [DefaultExecutionOrder(550)]
 public sealed class Plugin : BaseUnityPlugin
@@ -50,6 +50,7 @@ public sealed class Plugin : BaseUnityPlugin
             GuestReticle.Install(harmony);
             SeatPing.Install(harmony);
             PingPresentation.Install(harmony);
+            MirrorPresentation.Install(harmony);
             SeatGhosts.Install(harmony);
             HazardHits.Install(harmony);
             SharedWorldHooks.Install(harmony);
@@ -67,7 +68,7 @@ public sealed class Plugin : BaseUnityPlugin
                 StartCoroutine(probe.Proof());
             else if (args.Contains("-peak-coop-menu-check"))
                 StartCoroutine(probe.Slice(menuOnly: true));
-            else if (args.Contains("-peak-coop-slice") || args.Contains("-peak-coop-item-check") || args.Contains("-peak-coop-feed-check") || args.Contains("-peak-coop-logic-check") || args.Contains("-peak-coop-world-check"))
+            else if (args.Contains("-peak-coop-slice") || args.Contains("-peak-coop-item-check") || args.Contains("-peak-coop-feed-check") || args.Contains("-peak-coop-logic-check") || args.Contains("-peak-coop-world-check") || args.Contains("-peak-coop-mirror-flag-check"))
                 StartCoroutine(probe.Slice());
             else if (args.Any(arg => arg == "-peak-coop-bench" || arg == "-peak-coop-perf" || arg == "-peak-coop-perf-api"))
                 StartCoroutine(probe.Benchmark());
@@ -76,6 +77,7 @@ public sealed class Plugin : BaseUnityPlugin
         {
             Logger.LogError($"Local Co-op dinonaktifkan. {exception}");
             PingPresentation.Uninstall();
+            MirrorPresentation.Uninstall();
             SeatGhosts.Uninstall();
             try { harmony?.UnpatchSelf(); }
             catch (Exception rollbackError) { Logger.LogError($"Pelepasan patch gagal. {rollbackError}"); }
@@ -96,6 +98,7 @@ public sealed class Plugin : BaseUnityPlugin
     private void OnDestroy()
     {
         PingPresentation.Uninstall();
+        MirrorPresentation.Uninstall();
         SeatGhosts.Uninstall();
         ui?.Dispose();
         runtime?.Dispose();

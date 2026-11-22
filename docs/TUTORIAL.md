@@ -5,10 +5,10 @@ Mainkan PEAK berdua sampai berempat di satu PC dan satu layar. P1 memakai keyboa
 ## 1. Pasang mod di Windows
 
 1. Pastikan PEAK versi **3.1.0**, Steam build **26542162**, sudah terpasang. Untuk melihat Build ID, buka **Steam Library → PEAK → Properties → Updates**.
-2. Unduh **PEAKLocalCoop-0.1.12.zip** dari bagian **Assets** pada [rilis v0.1.12](https://github.com/AlphaGambit/PEAKLocalCoop/releases/tag/v0.1.12).
+2. Unduh **PEAKLocalCoop-0.1.13.zip** dari bagian **Assets** pada [rilis v0.1.13](https://github.com/AlphaGambit/PEAKLocalCoop/releases/tag/v0.1.13).
 3. Klik kanan ZIP, pilih **Extract All / Ekstrak Semua**, lalu simpan hasilnya di luar folder Steam, misalnya di Documents.
 4. Tutup PEAK. Buka folder hasil ekstrak dan jalankan **Install or Repair Local Co-op.cmd**. Pada pemasangan pertama, siapkan koneksi internet agar pemasang bisa mengambil BepInEx dari Thunderstore.
-5. Tunggu pesan **PEAK Local Co-op 0.1.12 siap**, lalu sambungkan controller dan biarkan Steam terbuka.
+5. Tunggu pesan **PEAK Local Co-op 0.1.13 siap**, lalu sambungkan controller dan biarkan Steam terbuka.
 
 ## 2. Mulai pendakian
 

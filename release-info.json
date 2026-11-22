@@ -1,6 +1,6 @@
 {
-  "version": "0.1.12",
-  "pluginSha256": "b694c8c57753ba72e82e2f9a4537f9097cad5f181888526dbffac0e9c033dbf4",
+  "version": "0.1.13",
+  "pluginSha256": "b939758f40102362a6a216812e1ba3bd9edc15a61bc0b7de186a976dba2ae2fc",
   "gameBuild": "26542162",
   "gameFiles": {
     "Managed/Assembly-CSharp.dll": "a3643f11dc444d86491270b224c0a0caf9126a10b26731feb97fc85ad1d82038",

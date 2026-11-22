@@ -120,9 +120,18 @@ internal static class SharedWorldHooks
     {
         var local = BuildGuard.Field(typeof(Character), nameof(Character.localCharacter));
         var owner = BuildGuard.Method(typeof(SharedWorldHooks), nameof(CheckpointOwner), typeof(Character));
+        var nativeWarp = BuildGuard.Method(typeof(Character), "WarpPlayer", typeof(Vector3), typeof(bool));
+        var warp = BuildGuard.Method(typeof(SharedWorldHooks), nameof(WarpToCheckpoint), typeof(Character), typeof(Vector3), typeof(bool));
         var matches = 0;
+        var warps = 0;
         foreach (var instruction in instructions)
         {
+            if (instruction.Calls(nativeWarp))
+            {
+                instruction.opcode = OpCodes.Call;
+                instruction.operand = warp;
+                warps++;
+            }
             if (instruction.LoadsField(local))
             {
                 matches++;
@@ -133,11 +142,52 @@ internal static class SharedWorldHooks
             }
             else yield return instruction;
         }
-        if (matches != 2) throw new InvalidOperationException("Tujuan pemulihan inventory checkpoint berubah.");
+        if (matches != 2 || warps != 1) throw new InvalidOperationException("Jalur respawn dari bendera PEAK berubah.");
     }
 
     private static Character CheckpointOwner(Character scout) =>
         SeatHooks.Scouts?.Find(scout) != null ? scout : Character.localCharacter;
+
+    private static readonly Action<Character, Vector3, bool> NativeWarp =
+        AccessTools.MethodDelegate<Action<Character, Vector3, bool>>(
+            BuildGuard.Method(typeof(Character), "WarpPlayer", typeof(Vector3), typeof(bool)));
+
+    private static void WarpToCheckpoint(Character scout, Vector3 target, bool poof)
+    {
+        if (ActiveScouts?.Find(scout) == null)
+        {
+            NativeWarp(scout, target, poof);
+            return;
+        }
+
+        var terrain = HelperFunctions.GetMask(HelperFunctions.LayerType.TerrainMap);
+        var players = PlayerHandler.GetAllPlayerCharacters();
+        bool Blocked(Vector3 center)
+        {
+            foreach (var other in players)
+                if (other && other != scout && !other.data.dead &&
+                    (other.Center - center).sqrMagnitude < 0.9f * 0.9f)
+                    return true;
+            return Physics.CheckCapsule(center - Vector3.up * 0.35f, center + Vector3.up * 0.28f,
+                0.4f, terrain, QueryTriggerInteraction.Ignore);
+        }
+
+        if (Blocked(target))
+        {
+            for (var i = 0; i < 16; i++)
+            {
+                var offset = Quaternion.Euler(0f, i * 45f, 0f) * Vector3.forward * (i < 8 ? 1f : 1.6f);
+                if (!Physics.Raycast(target + offset + Vector3.up * 0.5f, Vector3.down, out var floor,
+                        2.1f, terrain, QueryTriggerInteraction.Ignore) || floor.normal.y < 0.75f)
+                    continue;
+                var candidate = floor.point + Vector3.up;
+                if (Blocked(candidate)) continue;
+                target = candidate;
+                break;
+            }
+        }
+        NativeWarp(scout, target, poof);
+    }
 
     private static void EndRun()
     {

@@ -2,6 +2,12 @@
 
 Pengujian dilakukan 21 November 2026 pada PEAK 3.1.0, Steam build 26542162, lewat satu proses PEAK Windows dengan BepInEx 5.4.23.3. Input controller probe berasal dari perangkat Unity Input System sintetis. Launcher tetap memakai Steam biasa. Semua hit, inventory, checkpoint dan scene di bawah berjalan di game terpasang.
 
+## Regresi cermin dan bendera 0.1.13
+
+Probe `-peak-coop-mirror-flag-check` lulus di PEAK 3.1.0 build 26542162 dengan dua panel, output 1920×1080 dan Direct3D 11. Di Airport, probe memindahkan kamera P1 sambil menahan kamera P2 di titik yang sama. Proyeksi pantulan mengikuti tiap panel dan posisi pantulan P2 tetap. Tangkapan layar juga memperlihatkan dua perspektif cermin yang berbeda.
+
+Di pulau, controller sintetis P2 memasang bendera lewat RT. Satu bendera dibuat untuk P2, slot P2 kosong dan inventory P1 tetap sama. P1 kemudian berdiri di titik respawn bendera. P2 memakai jalur respawn asli ke pijakan terdekat dan dapat bergerak lagi lewat controller tanpa memindahkan P1.
+
 ## Regresi pemberian item 0.1.12
 
 Probe `-peak-coop-feed-check` berjalan pada PEAK 3.1.0 build 26542162 di pulau. Empat kasus lulus melalui RPC pemberian asli PEAK, yaitu bandage dan Apple Berry pada kedua arah P1↔P2. Item terpakai hilang dari tangan dan slot pemberi, dan jumlah item penerima tetap sama. Probe memanggil aksi pemberian secara langsung setelah pickup dan equip, sehingga fokusnya jalur konsumsi dan inventory.

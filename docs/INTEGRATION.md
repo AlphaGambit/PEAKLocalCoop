@@ -109,3 +109,9 @@ Pada 0.1.5, ikon dua pendaki menjadi anak dari tempat ikon asli Play Offline, se
 ### Konsumsi lintas pemain pada 0.1.12
 
 `Character.GetFedItemRPC` mengisi `Item.overrideHolderCharacter` dengan penerima agar efek bandage atau makanan diterapkan kepadanya. `Item.Consume` memakai `holderCharacter` lagi saat memilih inventory dan slot. Adapter `ItemSeat.RouteConsumedSlot` mempertahankan jalur event konsumsi asli dan mengarahkan operasi slot ke `trueHolderCharacter` di room offline Local Co-op. Pemeriksaan delapan pemanggilan getter menahan patch jika bentuk metode berubah. Mode solo dan online tetap memakai getter asli.
+
+### Cermin Airport dan bendera checkpoint pada 0.1.13
+
+`Mirror.LateUpdate` milik PEAK biasanya menyimpan satu referensi kamera utama. Dalam split-screen Local Co-op, `MirrorPresentation` mengambil alih kamera pantul otomatis dan menjalankan perhitungan proyeksi PEAK dengan kamera panel yang akan dirender. URP menggambar pantulan pada tekstur bawaan tepat sebelum panel membacanya. Pantulan dilewati jika cermin di luar frustum panel. Kamera pantul otomatis dikembalikan saat sesi melepaskan viewport.
+
+`Constructable.TryUpdatePreview` dapat menghasilkan `valid` dari data raycast default saat tidak ada collider. Untuk bendera pemain tamu, `ItemSeat` memeriksa collider dan preview sebelum memulai atau menyelesaikan cast. Jalur `CharacterItems.DoUsing` membaca aksi dari controller pemilik, lalu PEAK tetap menangani cast dan pembuatan bendera. `Character.TryCheckpoint` memakai posisi asli jika kosong. Untuk pemain tamu, jika titik itu bertabrakan dengan terrain atau sedang ditempati scout lain, adapter memeriksa titik pijak di sekitarnya sebelum memanggil warp asli.

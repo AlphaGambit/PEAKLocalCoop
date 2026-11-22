@@ -27,6 +27,18 @@ internal static class ItemSeat
     private static readonly AccessTools.FieldRef<RopeSpool, RopeTier> RopeAnchor =
         AccessTools.FieldRefAccess<RopeSpool, RopeTier>(BuildGuard.Field(typeof(RopeSpool), "ropeTier"));
 
+    private static readonly Func<Character, bool> CanDoInput = AccessTools.MethodDelegate<Func<Character, bool>>(
+        BuildGuard.Method(typeof(Character), "CanDoInput"));
+    private static readonly Func<Item, bool> IsUsingPrimary = AccessTools.MethodDelegate<Func<Item, bool>>(
+        AccessTools.PropertyGetter(typeof(Item), "isUsingPrimary"));
+
+    private static readonly AccessTools.FieldRef<Constructable, bool> PlacementValid =
+        AccessTools.FieldRefAccess<Constructable, bool>(BuildGuard.Field(typeof(Constructable), "valid"));
+    private static readonly AccessTools.FieldRef<Constructable, RaycastHit> PlacementHit =
+        AccessTools.FieldRefAccess<Constructable, RaycastHit>(BuildGuard.Field(typeof(Constructable), "currentConstructHit"));
+    private static readonly AccessTools.FieldRef<Constructable, ConstructablePreview> PlacementPreview =
+        AccessTools.FieldRefAccess<Constructable, ConstructablePreview>(BuildGuard.Field(typeof(Constructable), "currentPreview"));
+
     public static void Install(Harmony harmony)
     {
         harmony.Patch(BuildGuard.Method(typeof(RopeSpool), "Update"),
@@ -35,6 +47,13 @@ internal static class ItemSeat
             prefix: new HarmonyMethod(typeof(ItemSeat), nameof(RescueAim)));
         harmony.Patch(BuildGuard.Method(typeof(CharacterMovement), "TryJetpack"),
             transpiler: new HarmonyMethod(typeof(ItemSeat), nameof(RouteJetpackFuel)));
+        harmony.Patch(BuildGuard.Method(typeof(CharacterItems), "DoUsing"),
+            prefix: new HarmonyMethod(typeof(ItemSeat), nameof(ReadGuestFlagInput)),
+            transpiler: new HarmonyMethod(typeof(ItemSeat), nameof(RouteItemInputGate)));
+        harmony.Patch(BuildGuard.Method(typeof(Constructable), nameof(Constructable.TryUpdatePreview)),
+            postfix: new HarmonyMethod(typeof(ItemSeat), nameof(InvalidateEmptyFlagPreview)));
+        harmony.Patch(BuildGuard.Method(typeof(Item), "FinishCastPrimary"),
+            prefix: new HarmonyMethod(typeof(ItemSeat), nameof(RequireFlagPreview)));
         harmony.Patch(BuildGuard.Method(typeof(Item), "Consume", typeof(int)),
             transpiler: new HarmonyMethod(typeof(ItemSeat), nameof(RouteConsumedSlot)));
         var patch = new HarmonyMethod(typeof(ItemSeat), nameof(RouteOwner));
@@ -63,6 +82,68 @@ internal static class ItemSeat
             BuildGuard.Method(typeof(Dynamite), "Update")
         })
             harmony.Patch(target, transpiler: patch);
+    }
+
+    private static void ReadGuestFlagInput(Character ___character)
+    {
+        if (SeatHooks.Scouts?.Find(___character) == null) return;
+        var item = ___character.data.currentItem;
+        if (!item || !item.TryGetComponent<CheckpointConstructable>(out var flag)) return;
+        var actions = SeatHooks.ActionsFor(___character);
+        var action = actions?.Asset.FindAction("UsePrimary");
+        if (action == null) return;
+
+        var allowed = SeatHooks.AllowsGuestInput(___character, actions);
+        var held = allowed && action.IsPressed();
+        var casting = IsUsingPrimary(item);
+        var input = ___character.input;
+        if (held && !casting) flag.TryUpdatePreview();
+        // Read the paired action at the point of use so flag placement can start
+        // when the surface becomes valid, even if the initial press was earlier.
+        input.usePrimaryWasPressed = held && !casting && PlacementValid(flag);
+        input.usePrimaryIsPressed = held;
+        input.usePrimaryWasReleased = casting && !held;
+    }
+
+    private static bool HasFlagSurface(Constructable flag) =>
+        PlacementHit(flag).collider && PlacementPreview(flag);
+
+    private static void InvalidateEmptyFlagPreview(Constructable __instance)
+    {
+        if (__instance is CheckpointConstructable && GuestUser(__instance) && !HasFlagSurface(__instance))
+            PlacementValid(__instance) = false;
+    }
+
+    private static bool RequireFlagPreview(Item __instance)
+    {
+        if (!GuestUser(__instance) || !__instance.TryGetComponent<CheckpointConstructable>(out var flag) ||
+            (PlacementValid(flag) && HasFlagSurface(flag)))
+            return true;
+        __instance.CancelUsePrimary();
+        return false;
+    }
+
+    private static bool AllowItemInput(Character scout) =>
+        SeatHooks.Scouts?.Find(scout) != null
+            ? SeatHooks.AllowsGuestInput(scout, SeatHooks.ActionsFor(scout))
+            : CanDoInput(scout);
+
+    private static IEnumerable<CodeInstruction> RouteItemInputGate(IEnumerable<CodeInstruction> source)
+    {
+        var original = BuildGuard.Method(typeof(Character), "CanDoInput");
+        var route = BuildGuard.Method(typeof(ItemSeat), nameof(AllowItemInput), typeof(Character));
+        var matches = 0;
+        foreach (var instruction in source)
+        {
+            if (instruction.Calls(original))
+            {
+                instruction.opcode = OpCodes.Call;
+                instruction.operand = route;
+                matches++;
+            }
+            yield return instruction;
+        }
+        if (matches != 1) throw new InvalidOperationException("Jalur pembatalan penggunaan item PEAK berubah.");
     }
 
     private static void UpdateGuestSpool(RopeSpool __instance)

@@ -161,13 +161,16 @@ internal static class SeatHooks
 
     private static void EndUi(SeatActions __state) => __state?.RestoreInterface();
 
+    public static bool AllowsGuestInput(Character guest, SeatActions actions) =>
+        actions?.Connected == true && !guest.data.usingWheel && !GUIManager.InPauseMenu &&
+        !GUIManager.instance.windowBlockingInput && !LoadingScreenHandler.loading &&
+        Character.localCharacter && !Character.localCharacter.gameOver;
+
     private static void CanDoInput(Character __instance, ref bool __result)
     {
         if (Scouts?.IsActive != true || !Inputs.TryGetValue(__instance.input, out var actions)) return;
         if (Scouts.Find(__instance) != null)
-            __result = actions.Connected && !__instance.data.usingWheel && !GUIManager.InPauseMenu
-                && !GUIManager.instance.windowBlockingInput
-                && !LoadingScreenHandler.loading && Character.localCharacter && !Character.localCharacter.gameOver;
+            __result = AllowsGuestInput(__instance, actions);
         else if (!actions.Connected)
             __result = false;
     }

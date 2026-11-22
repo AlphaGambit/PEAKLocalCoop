@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using BepInEx.Logging;
 using Peak.Network;
+using HarmonyLib;
 using Photon.Pun;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -278,6 +279,8 @@ internal sealed class RuntimeProbe
             Application.Quit();
             yield break;
         }
+        var mirrorFlagCheck = Environment.GetCommandLineArgs().Contains("-peak-coop-mirror-flag-check");
+        if (mirrorFlagCheck) yield return CheckAirportMirror();
         var kiosk = Object.FindFirstObjectByType<AirportCheckInKiosk>();
         if (!kiosk)
         {
@@ -298,7 +301,7 @@ internal sealed class RuntimeProbe
             }
             yield return null;
         }
-        yield return new WaitForSecondsRealtime(10f);
+        yield return new WaitForSecondsRealtime(mirrorFlagCheck ? 2f : 10f);
 
         if (Environment.GetCommandLineArgs().Contains("-peak-coop-item-check"))
         {
@@ -313,6 +316,13 @@ internal sealed class RuntimeProbe
             var second = runtime.GetCharacter(seat);
             yield return CheckFeeding(first, second);
             yield return CheckFeeding(second, first);
+            Application.Quit();
+            yield break;
+        }
+
+        if (mirrorFlagCheck)
+        {
+            yield return CheckFlagPlacement(Character.localCharacter, runtime.GetCharacter(seat), pad);
             Application.Quit();
             yield break;
         }
@@ -1039,6 +1049,179 @@ internal sealed class RuntimeProbe
         var dropped = InventorySize(scout) == original && CountGroundItems(prefab.itemID) == worldBefore + 1;
         var isolated = others.Select(InventorySize).SequenceEqual(counts);
         log.LogInfo($"LOGIC: P{seat.Number} pickup {picked}, controller drop {dropped}, other inventories unchanged {isolated}.");
+    }
+
+    private System.Collections.IEnumerator CheckAirportMirror()
+    {
+        var mirror = Object.FindObjectsByType<Mirror>(FindObjectsSortMode.None)
+            .FirstOrDefault(candidate => candidate.isActiveAndEnabled);
+        if (!mirror)
+        {
+            log.LogError($"MIRROR: FAIL no native Airport mirror, alternatives {Object.FindObjectsByType<MirrorCameraScript>(FindObjectsSortMode.None).Length}/{Object.FindObjectsByType<MirrorReflection>(FindObjectsSortMode.None).Length}.");
+            yield break;
+        }
+        var surface = MirrorPresentation.Surface(mirror);
+        var reflection = MirrorPresentation.Reflection(mirror);
+        var panels = new[] { runtime.GetCamera(1), runtime.GetCamera(2) };
+        var normal = surface.up;
+        var middle = surface.GetComponent<Renderer>().bounds.center;
+        var hop = 0;
+        var samples = new Vector3[2, 2];
+        var errors = new float[2, 2];
+        var seen = new bool[2, 2];
+
+        void Aim(ScriptableRenderContext context, System.Collections.Generic.List<Camera> cameras)
+        {
+            for (var i = 0; i < panels.Length; i++)
+            {
+                var offset = i == 0 ? hop * 0.35f : -0.3f;
+                var pos = middle + normal * 1.8f + surface.right * offset;
+                panels[i].transform.SetPositionAndRotation(pos, Quaternion.LookRotation(middle - pos));
+            }
+        }
+        void Read(ScriptableRenderContext context, Camera panel)
+        {
+            var i = Array.IndexOf(panels, panel);
+            if (i < 0) return;
+            seen[hop, i] = true;
+            samples[hop, i] = reflection.transform.position;
+            var expected = surface.position + Vector3.Reflect(panel.transform.position - surface.position, normal) +
+                surface.forward * (float)BuildGuard.Field(typeof(Mirror), "verticalOffset").GetValue(mirror);
+            errors[hop, i] = Vector3.Distance(expected, samples[hop, i]);
+        }
+
+        RenderPipelineManager.beginContextRendering += Aim;
+        RenderPipelineManager.endCameraRendering += Read;
+        try
+        {
+            yield return new WaitForEndOfFrame();
+            hop = 1;
+            CaptureSlice("mirror");
+            yield return new WaitForEndOfFrame();
+            var mainMoves = Vector3.Distance(samples[0, 0], samples[1, 0]) > 0.25f;
+            var guestStill = Vector3.Distance(samples[0, 1], samples[1, 1]) < 0.001f;
+            var pass = seen.Cast<bool>().All(value => value) && errors.Cast<float>().Max() < 0.002f &&
+                mainMoves && guestStill && !reflection.enabled;
+            log.LogInfo($"MIRROR: {(pass ? "PASS" : "FAIL")} native reflection follows P1 {mainMoves}, P2 stays fixed {guestStill}, expected reflection error {errors.Cast<float>().Max():F4}, automatic camera disabled {!reflection.enabled}.");
+        }
+        finally
+        {
+            RenderPipelineManager.beginContextRendering -= Aim;
+            RenderPipelineManager.endCameraRendering -= Read;
+        }
+    }
+
+    private System.Collections.IEnumerator CheckFlagPlacement(Character host, Character guest, Gamepad pad)
+    {
+        var prefab = Zorro.Core.SingletonAsset<ItemDatabase>.Instance.itemLookup.Values
+            .First(item => item.GetComponent<CheckpointConstructable>());
+        var hostInventory = InventorySize(host);
+        var groundItem = PhotonNetwork.InstantiateItemRoom(prefab.name, guest.Center + Vector3.up, Quaternion.identity)
+            .GetComponent<Item>();
+        groundItem.Interact(guest);
+        yield return null;
+        var slot = guest.player.itemSlots.FirstOrDefault(pocket => !pocket.IsEmpty() && pocket.prefab == prefab);
+        if (slot == null)
+        {
+            log.LogError("FLAG: FAIL pickup.");
+            yield break;
+        }
+        guest.refs.items.EquipSlot(Zorro.Core.Optionable<byte>.Some(slot.itemSlotID));
+        yield return new WaitForSecondsRealtime(0.8f);
+        var held = guest.data.currentItem;
+        if (!held || !held.TryGetComponent<CheckpointConstructable>(out var constructable))
+        {
+            log.LogError("FLAG: FAIL equip.");
+            yield break;
+        }
+
+        var valid = BuildGuard.Field(typeof(Constructable), "valid");
+        var hitField = BuildGuard.Field(typeof(Constructable), "currentConstructHit");
+        var previewField = BuildGuard.Field(typeof(Constructable), "currentPreview");
+        var recalc = BuildGuard.Method(typeof(Character), "RecalculateLookDirections");
+        var ready = false;
+        var initialLook = guest.data.lookValues;
+        foreach (var angle in new[] { 45f, 60f, 75f, -45f, -60f, -75f })
+        {
+            for (var turn = 0; turn < 4 && !ready; turn++)
+            {
+                guest.data.lookValues = new Vector2(initialLook.x + 90f * turn, angle);
+                recalc.Invoke(guest, null);
+                yield return new WaitForSecondsRealtime(0.15f);
+                ready = (bool)valid.GetValue(constructable) &&
+                    ((RaycastHit)hitField.GetValue(constructable)).collider &&
+                    (ConstructablePreview)previewField.GetValue(constructable);
+            }
+            if (ready) break;
+        }
+        var priorFlags = guest.data.checkpointFlags.ToArray();
+        var hostFlags = host.data.checkpointFlags.Count;
+        if (!ready)
+        {
+            log.LogError("FLAG: FAIL no valid placement surface.");
+            yield break;
+        }
+        var starts = (Action)BuildGuard.Field(typeof(Item), "OnPrimaryStarted").GetValue(held);
+        var finishes = (Action)BuildGuard.Field(typeof(Item), "OnPrimaryFinishedCast").GetValue(held);
+        log.LogInfo($"FLAG: subscribers start [{string.Join(", ", starts?.GetInvocationList().Select(d => d.Method.DeclaringType.Name + "." + d.Method.Name) ?? Enumerable.Empty<string>())}], finish [{string.Join(", ", finishes?.GetInvocationList().Select(d => d.Method.DeclaringType.Name + "." + d.Method.Name) ?? Enumerable.Empty<string>())}], cast duration {BuildGuard.Field(typeof(Item), "usingTimePrimary").GetValue(held)}.");
+        var constructing = BuildGuard.Field(typeof(Constructable), "constructing");
+        var castProgress = AccessTools.PropertyGetter(typeof(Item), "castProgress");
+        var sawPress = false;
+        var sawHeld = false;
+        var sawConstructing = false;
+        var maxProgress = 0f;
+        var firstPhase = true;
+        var startCalls = 0;
+        var finishCalls = 0;
+        var cancelCalls = 0;
+        held.OnPrimaryStarted += () => startCalls++;
+        held.OnPrimaryFinishedCast += () => finishCalls++;
+        held.OnPrimaryCancelled += () => cancelCalls++;
+        var heldAction = SeatHooks.ActionsFor(guest).Asset.FindAction("UsePrimary");
+        log.LogInfo($"FLAG: native binding {string.Join(", ", heldAction.controls.Select(control => control.path))}, can use {held.CanUsePrimary()}, items enabled {guest.refs.items.isActiveAndEnabled}, struggling {guest.refs.afflictions.isStruggling}, position {guest.Center}.");
+        InputSystem.QueueStateEvent(pad, new GamepadState { rightTrigger = 1f });
+        var deadline = Time.realtimeSinceStartup + 8f;
+        while (Time.realtimeSinceStartup < deadline && guest.data.checkpointFlags.Count <= priorFlags.Length)
+        {
+            yield return null;
+            if (!held) break;
+            sawPress |= guest.input.usePrimaryWasPressed;
+            sawHeld |= guest.input.usePrimaryIsPressed;
+            sawConstructing |= (bool)constructing.GetValue(constructable);
+            maxProgress = Mathf.Max(maxProgress, (float)castProgress.Invoke(held, null));
+            if (!firstPhase || !pad.rightTrigger.isPressed) continue;
+            firstPhase = false;
+            log.LogInfo($"FLAG: first held frame pressed {sawPress}, constructing {sawConstructing}, usable {held.CanUsePrimary()}, valid {valid.GetValue(constructable)}, hit {((RaycastHit)hitField.GetValue(constructable)).collider != null}, raw {pad.rightTrigger.isPressed}, paired {heldAction.IsPressed()}, allowed {SeatHooks.AllowsGuestInput(guest, SeatHooks.ActionsFor(guest))}, wheel {guest.data.usingWheel}, blocked {GUIManager.instance.windowBlockingInput}, pause {GUIManager.InPauseMenu}, game over {host.gameOver}.");
+        }
+        log.LogInfo($"FLAG: cast trace pressed {sawPress}, held {sawHeld}, constructing {sawConstructing}, progress {maxProgress:F3}, event calls start/finish/cancel {startCalls}/{finishCalls}/{cancelCalls}.");
+        InputSystem.QueueStateEvent(pad, new GamepadState());
+        yield return null;
+        var flag = guest.data.checkpointFlags.FirstOrDefault(candidate => !priorFlags.Contains(candidate));
+        var placed = flag && guest.data.checkpointFlags.Count == priorFlags.Length + 1 &&
+            host.data.checkpointFlags.Count == hostFlags && slot.IsEmpty() && InventorySize(host) == hostInventory;
+        log.LogInfo($"FLAG: {(placed ? "PASS" : "FAIL")} P2 native controller placement, owner {flag != null}, consumed {slot.IsEmpty()}, P1 inventory unchanged {InventorySize(host) == hostInventory}.");
+        if (!placed)
+        {
+            yield break;
+        }
+
+        var target = flag.transform.position + Vector3.up;
+        Warp(host, target);
+        yield return new WaitForSecondsRealtime(1.1f);
+        var hostPosition = host.Center;
+        var occupied = Vector3.Distance(hostPosition, target) < 0.9f;
+        BuildGuard.Method(typeof(Character), "DieInstantly").Invoke(guest, null);
+        yield return new WaitForSecondsRealtime(2f);
+        var returned = !guest.warping && !guest.data.dead && guest.data.fullyConscious &&
+            Vector3.Distance(guest.Center, target) < 2.1f;
+        var separated = Vector3.Distance(guest.Center, host.Center) > 0.85f;
+        var start = guest.Center;
+        InputSystem.QueueStateEvent(pad, new GamepadState { leftStick = Vector2.up });
+        yield return new WaitForSecondsRealtime(0.85f);
+        InputSystem.QueueStateEvent(pad, new GamepadState());
+        var moved = Vector3.Distance(guest.Center, start) > 0.35f;
+        var hostStayed = Vector3.Distance(host.Center, hostPosition) < 1.5f;
+        log.LogInfo($"FLAG: {(occupied && returned && separated && moved && hostStayed ? "PASS" : "FAIL")} P2 respawn and controller movement, occupied {occupied}, returned {returned}, separated {separated}, moved {moved}, P1 stayed {hostStayed}.");
     }
 
     private System.Collections.IEnumerator CheckFeeding(Character giver, Character receiver)
