@@ -1,0 +1,19 @@
+{
+  "build": {
+    "dotnetSdkTested": "8.0.422",
+    "targetFramework": "netstandard2.1",
+    "languageVersion": "10.0"
+  },
+  "game": {
+    "steamAppId": 3527290,
+    "steamBuildId": 26542162,
+    "version": "3.1.0",
+    "unity": "6000.3.15f1",
+    "platform": "Windows x64 Unity Mono"
+  },
+  "loader": {
+    "thunderstorePackage": "BepInEx-BepInExPack_PEAK-5.4.75301",
+    "bepInExCore": "5.4.23.3",
+    "harmony": "0Harmony.dll (bundled with the pinned pack)"
+  }
+}

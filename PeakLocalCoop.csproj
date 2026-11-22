@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>PeakLocalCoop</AssemblyName>
+    <RootNamespace>PeakLocalCoop</RootNamespace>
+    <LangVersion>10.0</LangVersion>
+    <Version>0.1.11</Version>
+    <Deterministic>true</Deterministic>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <PeakDir Condition="'$(PeakDir)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/..'))</PeakDir>
+    <Managed>$(PeakDir)/PEAK_Data/Managed</Managed>
+    <BepInExCore Condition="'$(BepInExCore)' == ''">$(PeakDir)/BepInEx/core</BepInExCore>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="src/**/*.cs" />
+    <EmbeddedResource Include="assets/helping-hand.png" LogicalName="PeakLocalCoop.HelpingHand.png" />
+    <EmbeddedResource Include="assets/wooden-trail-sign.png" LogicalName="PeakLocalCoop.WoodenTrailSign.png" />
+    <EmbeddedResource Include="assets/keyboard-mouse.png" LogicalName="PeakLocalCoop.KeyboardMouse.png" />
+    <EmbeddedResource Include="assets/gamepad.png" LogicalName="PeakLocalCoop.Gamepad.png" />
+    <EmbeddedResource Include="assets/trail-roster.png" LogicalName="PeakLocalCoop.TrailRoster.png" />
+    <GameReference Include="Assembly-CSharp;Assembly-CSharp-firstpass;PhotonUnityNetworking;PhotonRealtime;Photon3Unity3D;PhotonVoice;UnityEngine;UnityEngine.CoreModule;UnityEngine.PhysicsModule;UnityEngine.AudioModule;UnityEngine.AnimationModule;UnityEngine.ImageConversionModule;UnityEngine.ScreenCaptureModule;Unity.InputSystem;UnityEngine.IMGUIModule;UnityEngine.InputLegacyModule;UnityEngine.UI;UnityEngine.UIModule;UnityEngine.TextRenderingModule;Unity.RenderPipelines.Universal.Runtime;Unity.RenderPipelines.Core.Runtime;Unity.TextMeshPro;Sirenix.Serialization;Zorro.ControllerSupport;Zorro.Core.Runtime;Zorro.Settings.Runtime;Zorro.UI.Runtime" />
+    <Reference Include="@(GameReference)">
+      <HintPath>$(Managed)/%(Identity).dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx" HintPath="$(BepInExCore)/BepInEx.dll" Private="false" />
+    <Reference Include="0Harmony" HintPath="$(BepInExCore)/0Harmony.dll" Private="false" />
+  </ItemGroup>
+  <Target Name="CheckLocalReferences" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(Managed)/Assembly-CSharp.dll')" Text="Set PeakDir to the installed Steam PEAK directory." />
+    <Error Condition="!Exists('$(BepInExCore)/BepInEx.dll') Or !Exists('$(BepInExCore)/0Harmony.dll')" Text="Set BepInExCore to the core directory of BepInExPack_PEAK 5.4.75301." />
+  </Target>
+</Project>

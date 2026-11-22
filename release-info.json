@@ -1,0 +1,35 @@
+{
+  "version": "0.1.11",
+  "pluginSha256": "780f7384a2e90237882b16060e860e0ae079a71378a12bfddeced217e11a7d11",
+  "gameBuild": "26542162",
+  "gameFiles": {
+    "Managed/Assembly-CSharp.dll": "a3643f11dc444d86491270b224c0a0caf9126a10b26731feb97fc85ad1d82038",
+    "Managed/PhotonUnityNetworking.dll": "d0aa090013a5327d35e642dcdcc4797857b81a994d50eba3394aeb24fa5cd11f",
+    "Managed/PhotonRealtime.dll": "857240a5403ebae9319abc8d4617f140cbc85e744109e386f65664a4796fb3a4",
+    "Managed/Zorro.ControllerSupport.dll": "d5ac307465994a46ee74c5e4313cf9470382c12dc4c600ff1980c7e84f0c8487",
+    "Managed/Unity.RenderPipelines.Universal.Runtime.dll": "66c6a881c13cd4a2a35bf25d2fddfd136db725e7f4a0b9210b2bcbb9870234cb",
+    "Managed/Unity.InputSystem.dll": "acfe2788d3f891022178c0ee1bf4d307473a99079925b3cbb2418dde8e615850",
+    "globalgamemanagers": "81806cade6c480a9ba4beb0b13c686d3785fe3e6a5d422d4f7da0e472455a5e1"
+  },
+  "loaderVersion": "5.4.75301",
+  "loaderUrl": "https://thunderstore.io/package/download/BepInEx/BepInExPack_PEAK/5.4.75301/",
+  "loaderArchiveSha256": "a71432613ab0b2f560046bc341d949c9d853b4f5d5223ab5e7f2ef1f113522e7",
+  "loaderFiles": {
+    ".doorstop_version": "bd7f581324076003351a0fc86afebd288bfc2e9d3bfc48d2e2e88596d7f4e3f1",
+    "BepInEx/config/BepInEx.cfg": "80ef2479590233489f212ebd8e72d2c9921793a09e0a696b3c3f0e60698fc803",
+    "BepInEx/core/0Harmony.dll": "1a21cc03424fc82c3dd1346905d16494536b9595ae4162228d99fb7c285c1031",
+    "BepInEx/core/0Harmony20.dll": "553f73c1beba0f0401612820e2c5ba44bed2e1ec4db96596daea8b4766477070",
+    "BepInEx/core/BepInEx.dll": "9fe4a88d4f949fcdb3222a05c1902fec94f99655501e5eb60408543492ce9884",
+    "BepInEx/core/BepInEx.Harmony.dll": "05d5a58c532dcd7e95bcc0835243b133c56954b11847f818c105e5b842e4ade3",
+    "BepInEx/core/BepInEx.Preloader.dll": "9ab1376bb0d4ca87b6b63d493d3ffd5f025e94ac401d47243f0e46fd771909bd",
+    "BepInEx/core/HarmonyXInterop.dll": "c5f3c4f55e80f463b68ae61f63f01cbec2d1fa03153c6d16eeed8233708e6a3f",
+    "BepInEx/core/Mono.Cecil.dll": "7ae470288fff4a402899c254d0a76cefef55877f5c54f96e83c797cc5bb6e2f6",
+    "BepInEx/core/Mono.Cecil.Mdb.dll": "5896d1898f616701fff18f3b2c71e6b844d2390ef9f41e1c5fccce8cb27c698e",
+    "BepInEx/core/Mono.Cecil.Pdb.dll": "174db44a067f58561510af746f3caeb032037762c57a31c8d9ee32db25174984",
+    "BepInEx/core/Mono.Cecil.Rocks.dll": "54ac539fb5ddc8b44c0e9acd0fcb7324f89d1a072edf8ebc1b06dd691e3d3927",
+    "BepInEx/core/MonoMod.RuntimeDetour.dll": "40e49bb314391cd7bddc2644f8553eeba92c194b940836b103df16955c464e0c",
+    "BepInEx/core/MonoMod.Utils.dll": "9d1495f147ac93c4f81f84538c1a326e8f8a6aefc78d6289d798f3ce1162c5e9",
+    "doorstop_config.ini": "c50706797a8bdecdc251c1e05c89d66ea6d1b34adbcaa204eec8570e383e2c6a",
+    "winhttp.dll": "1c8677ee9ebe604c5f83a105697ae2878b75201ded0b57eab8da37c14c2c8184"
+  }
+}
